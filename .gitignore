@@ -45,3 +45,12 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+*.rar
+js/jquery.prettyPhoto.js
+css/prettyPhoto.css
+.project
+*.pydevproject
+css/960.css
+css/main.css
+js/content.js
+quantumcomputation.pyc

@@ -1,0 +1,20 @@
+application: qc-sim
+version: 4
+runtime: python
+api_version: 1
+
+handlers:
+- url: /js
+  static_dir: js  
+
+- url: /css
+  static_dir: css  
+  
+- url: /pics
+  static_dir: pics  
+
+- url: /img
+  static_dir: img  
+
+- url: /.*
+  script: helloworld.py

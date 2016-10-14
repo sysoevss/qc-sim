@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Quantum Computer Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+      .styled_select {
+      	width: 60px;
+      	overflow: hidden;
+      }
+      .select_small {
+      	width: 60px;
+      	border: none;
+      	margin: auto;
+      	-webkit-appearance: none;
+      }
+    </style>
+    <link href="/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+	<script type="text/javascript" src="/js/jquery-1.8.2.min.js"></script>  
+
+	<script>
+	var guid, example_guid;
+	$(document).ready(function() {
+		//
+		// Main menu handlers
+		//
+		$(".nav > li > a").click(function(e) {
+		    e.preventDefault();
+	    	$(".nav > li").removeClass("active");
+			$(this).parent().addClass("active");
+
+	    	$(".container").hide();
+	    	$("#nav_container").show();
+	    	container_id = $(this).attr("id") + "_container";
+	    	$("#" + container_id).show();			
+		});
+		//
+		// Table Drawing
+		//
+		options = "<div class='styled_select'> \
+					<select class='select_small'> \
+						<option>------</option><option>&nbsp; * </option><option>&nbsp;  <h1>H</h1> </option><option>&nbsp; X </option> \
+						<option>&nbsp;  Z </option><option>&nbsp;  R1 </option><option>&nbsp; R2 </option> \
+						<option>&nbsp;  R3 </option><option>&nbsp;  R4 </option> \
+						<option>&nbsp;  R5 </option><option>&nbsp;  R6 </option> \
+					</select> \
+					</div>";
+
+		options2 = "<div class='styled_select'> \
+					<select class='select_small'> \
+							<option>0</option><option>1</option> \
+						</select> \
+						</div>";
+					
+		$("#draw_table").click(function(e) {
+		    e.preventDefault();
+		    x = $("#qubits").val();
+		    if (parseInt(x) > 24) {
+		    	x = 20;
+		    	$("#qubits").val("24");
+		    }
+		    y = $("#tacts").val();
+		    $("#cirsuit_table tr").remove();
+		    $("#input tr").remove();
+		    $("#output tr").remove();
+		    html_str = '';
+		    for (i = 0; i < x; i++) {
+		    	html_str += "<tr>";
+		    	for (j = 0; j < y; j++) {
+				    html_str += '<td>' + options + '</td>';
+		    	}
+			    html_str += '</tr>';
+		    }
+		    $("#cirsuit_table").append(html_str);
+
+		    html_str = '';
+		    for (i = 0; i < x; i++) {
+		    	html_str += "<tr><td>" + options2 + "</td></tr>";
+		    }
+		    $("#input").append(html_str);
+		    $("#output").append(html_str);
+
+		    $("#add_row").show();
+		    $("#add_column").show();
+		    $("#start").show();
+			//
+			// Init selects
+			//
+			/*$(".styled_select").each( function(index) {
+				$(this).html($(this).find("select").val());
+			});*/ 
+		});	
+		
+		$("#add_row").click(function(e){
+			if (parseInt($("#qubits").val()) >= 25) {
+				return;
+			}
+		    $("#cirsuit_table tr:last").after($("#cirsuit_table tr:last").clone());
+		    $("#input tr:last").after($("#input tr:last").clone());
+		    $("#output tr:last").after($("#output tr:last").clone());
+		    $("#qubits").val(parseInt($("#qubits").val()) + 1);
+		})
+		
+		$("#add_column").click(function(e){
+		    $("#cirsuit_table tr").append('<td>' + options + '</td>');
+		    $("#tacts").val(parseInt($("#tacts").val()) + 1);
+		})
+		//
+		// Circuit Start
+		//
+		$("#start").click(function(e) {
+			guid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+			    var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+			    return v.toString(16);
+			});
+		    e.preventDefault();
+		    input = "{";
+		    var AoA = $("#input tr").map(function(){
+		        return [
+		            $('td',this).map(function(){
+		                input += ($(this).find("select").val()) + ",";
+		            }).get()
+		        ];
+		    }).get();
+		    input += "}{"; 
+		    var AoA = $("#cirsuit_table").map(function(){
+		        return [
+		            $('td',this).map(function(){
+		                input += ($(this).find("select").val()) + ",";
+		            }).get()
+		        ];
+		    }).get();
+		    input += "}";
+			$.get("/compute/", {schema: input, guid: guid }, function(html_string) {
+				i = html_string.length - 1;
+				var AoA = $("#output tr").map(function(){
+			        return [
+			            $('td',this).map(function(){
+			                $(this).find("select").val(html_string[i]);
+			                i--;
+			            }).get()
+			        ];
+			    }).get();				
+				$('#progress_id').hide();
+		     });	
+			
+			//
+			// Init the progress bar
+			//
+			$('#progress_id').show();
+			
+		});		
+		
+		//
+		// Examples
+		//
+		options_start = "<td><div class='styled_select'><select class='select_small'>"; 
+		options_end = "<option>------</option><option>&nbsp; * </option><option>&nbsp;  <h1>H</h1> </option><option>&nbsp; X </option> \
+						<option>&nbsp;  Z </option><option>&nbsp;  R1 </option><option>&nbsp; R2 </option> \
+						<option>&nbsp;  R3 </option><option>&nbsp;  R4 </option> \
+						<option>&nbsp;  R5 </option><option>&nbsp;  R6 </option></select></div></td>";
+					
+		Igate = options_start + "<option>------</option>" + options_end;
+		Hgate = options_start + "<option>&nbsp;  <h1>H</h1> </option>" + options_end;
+		Cgate = options_start + "<option>&nbsp; * </option>" + options_end;
+		Xgate = options_start + "<option>&nbsp; X </option>" + options_end;
+		Zgate = options_start + "<option>&nbsp; Z </option>" + options_end;
+
+		one = "<div class='styled_select'><select class='select_small'><option>1</option><option>0</option></select></div>";
+	    zero = "<div class='styled_select'><select class='select_small'><option>0</option><option>1</option></select></div>";					
+						
+		$("#deutch").click(function(e) {
+			explain = "This is the circuit for solving Deutch's Problem. In this example f(x) = x (balanced). \
+			Thus, the first output bit must be 1. \
+			Linerar f(x) is modeled by the controlled X-gate. If you put the uncontrolled X-gate on the first qubit before it, \
+			you'll get f(x) = NOT x. No gates for Uf will model the 0-constant. Uncontrolled X on the second qubit - 1-constant.";
+		    e.preventDefault();
+		    $("#example_input tr").remove();
+		    $("#example_output tr").remove();
+
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + one + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    
+		    $("#example_cirsuit_table tr").remove();
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Cgate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Xgate + Igate + Hgate + Igate + "</tr>");
+
+		    $("#example_start").show();
+		    $("#example_text").show();
+		    $("#example_text").html(explain);
+		});	
+		$("#jozsa").click(function(e) {
+			explain = "This is the circuit for solving Deutch-Jozsa Problem. In this example f(x) = PARITY(x) (balanced). \
+			Thus, the output vector (first three qubits) must be non-zero";
+		    e.preventDefault();
+		    $("#example_input tr").remove();
+		    $("#example_output tr").remove();
+
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + one + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    
+		    $("#example_cirsuit_table tr").remove();
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Xgate + Cgate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Xgate + Igate + Hgate + Igate + "</tr>");
+
+		    $("#example_start").show();
+		    $("#example_text").show();
+		    $("#example_text").html(explain);
+		});	
+		$("#vazirani").click(function(e) {
+			explain = "This is the circuit for solving Bernstein-Vazirani Problem (f(x) = ax). In this example a = 163 (0b10100011). \
+			Thus, the output vector measurement gives us the value of a";
+		    e.preventDefault();
+		    $("#example_input tr").remove();
+		    $("#example_output tr").remove();
+
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + one + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    
+		    $("#example_cirsuit_table tr").remove();
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Cgate + Igate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Cgate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Cgate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Igate + Igate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Igate + Igate + Igate + Cgate + Igate + Hgate + Igate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Igate + Hgate + Igate + Xgate + Xgate + Xgate + Xgate + Igate + Hgate + Igate + "</tr>");
+
+		    $("#example_start").show();
+		    $("#example_text").show();
+		    $("#example_text").html(explain);
+		});
+		$("#grover2").click(function(e) {
+			explain = "This is the circuit for Grover Algorithm Demonstration. In this example w = 0b10 (2). \
+			Thus, after one iteration, we see it in the output";
+		    e.preventDefault();
+		    $("#example_input tr").remove();
+		    $("#example_output tr").remove();
+
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + one + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    
+		    $("#example_cirsuit_table tr").remove();
+		    $("#example_cirsuit_table").append("<tr>" + Hgate + Igate + Xgate + Cgate + Xgate + Igate + Hgate + Xgate + Cgate + Xgate + Hgate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Hgate + Igate + Igate + Cgate + Igate + Igate + Hgate + Xgate + Cgate + Xgate + Hgate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Hgate + Igate + Igate + Xgate + Igate + Igate + Igate + Igate + Xgate + Xgate + Hgate + "</tr>");
+
+		    $("#example_start").show();
+		    $("#example_text").show();
+		    $("#example_text").html(explain);
+		});	
+		$("#grover3").click(function(e) {
+			explain = "This is the circuit for Grover Algorithm Demonstration. In this example w = 0b101 (5). \
+			Thus, after one iteration, we see it in the output with probability > 1/2";
+		    e.preventDefault();
+		    $("#example_input tr").remove();
+		    $("#example_output tr").remove();
+
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_input").append("<tr><td>" + one + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    $("#example_output").append("<tr><td>" + zero + "</td></tr>");
+		    
+		    $("#example_cirsuit_table tr").remove();
+		    $("#example_cirsuit_table").append("<tr>" + Hgate + Igate + Igate + Cgate + Igate + Igate + Hgate + Xgate + Cgate + Xgate + Hgate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Hgate + Igate + Xgate + Cgate + Xgate + Igate + Hgate + Xgate + Cgate + Xgate + Hgate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Hgate + Igate + Igate + Cgate + Igate + Igate + Hgate + Xgate + Cgate + Xgate + Hgate + "</tr>");
+		    $("#example_cirsuit_table").append("<tr>" + Hgate + Igate + Igate + Xgate + Igate + Igate + Igate + Igate + Xgate + Xgate + Hgate + "</tr>");
+
+		    $("#example_start").show();
+		    $("#example_text").show();
+		    $("#example_text").html(explain);
+		});	
+		
+		//
+		// Example Cirsuit Start
+		//
+		$("#example_start").click(function(e) {
+		    e.preventDefault();
+		    input = "{";
+		    var AoA = $("#example_input tr").map(function(){
+		        return [
+		            $('td',this).map(function(){
+		                input += ($(this).find("select").val()) + ",";
+		            }).get()
+		        ];
+		    }).get();
+		    input += "}{"; 
+		    var AoA = $("#example_cirsuit_table").map(function(){
+		        return [
+		            $('td',this).map(function(){
+		                input += ($(this).find("select").val()) + ",";
+		            }).get()
+		        ];
+		    }).get();
+		    input += "}";
+			$.get("/compute/", {schema: input }, function(html_string) {
+				i = html_string.length - 1;
+				var AoA = $("#example_output tr").map(function(){
+			        return [
+			            $('td',this).map(function(){
+			                $(this).find("select").val(html_string[i]);
+			                i--;
+			            }).get()
+			        ];
+			    }).get();				
+				$('#progress_example').hide();
+		     });	
+			//
+			// Init the progress bar
+			//
+			$('#progress_example').show();
+
+		});		
+		
+		
+	});
+
+
+</script>
+	
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container" id="nav_container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="#">Quantum Computer Simulator</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active"><a href="#" id="cirsuit">Circuit Scheme</a></li>
+              <li><a href="#" id="examples">Examples</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container " id="cirsuit_container">
+      <h1>Circuit</h1>
+      <div class="progress progress-striped active" style="display:none; width: 50%;" id="progress_id">
+		<div class="bar" style="width: 100%;"></div>
+	  </div>
+      
+		<table class="table-condensed">
+			<tr>
+				<td>Qubits:</td>
+				<td><input type="text" id="qubits"></td>
+				<td>Tacts:</td>
+				<td><input type="text" id="tacts"></td>
+			</tr>
+		</table>      
+		<table class="table-condensed">
+			<tr>
+				<td><a class = "btn btn-success" id="draw_table">DRAW</a></td>
+				<td>
+					<a class = "btn btn-success" style="display: none" id="add_row">+ Q</a>
+				</td>
+				 
+				<td>
+					<a class = "btn btn-success" style="display: none" id="add_column">+ T</a>
+				</td>
+				<td>
+					<a class = "btn btn-warning" style="display: none" id="start">Start!</a>
+				</td>
+			</tr>
+		</table>      
+      <br>
+      <div class="container-fluid" style="border-style:solid;">
+	      <div style="float:left;">
+	      	<table id="input" class="table-condensed"></table>
+	      </div>
+	      <div style="float:left;">
+	      	<table id="cirsuit_table" class="table-condensed"></table>
+	      </div>
+	      <div style="float:left;">
+	      	<table id="output" class="table-condensed"></table>
+	      </div>
+	  </div>
+    </div> <!-- /container -->
+
+    <div class="container " id="examples_container" style="display:none;">
+      <h1>Examples</h1>
+      <div class="progress progress-striped active" style="display:none; width: 50%;" id="progress_example">
+		<div class="bar" style="width: 100%;"></div>
+	  </div>
+
+		<table class="table-condensed">
+			<tr>
+				<td><a class = "btn btn-success" id="deutch">Deutch's Problem</a></td>
+				<td><a class = "btn btn-success" id="jozsa">Deutch-Jozsa Problem</a></td>
+				<td><a class = "btn btn-success" id="vazirani">Bernstein-Vazirani Problem</a></td>
+				<td><a class = "btn btn-success" id="grover2">Grover 2 qubits</a></td>
+				<td><a class = "btn btn-success" id="grover3">Grover 3 qubits</a></td>
+				<td>
+					<a class = "btn btn-warning" style="display: none" id="example_start">Start!</a>
+				</td>
+			</tr>
+		</table>      
+      <br>
+      <div class="container-fluid text-info" id="example_text" style="display:none;">
+      
+	  </div>
+	  <br>
+      <div class="container-fluid" style="border-style:solid;">
+	      <div style="float:left;">
+	      	<table id="example_input" class="table-condensed"></table>
+	      </div>
+	      <div style="float:left;">
+	      	<table id="example_cirsuit_table" class="table-condensed"></table>
+	      </div>
+	      <div style="float:left;">
+	      	<table id="example_output" class="table-condensed"></table>
+	      </div>
+	  </div>
+    </div> <!-- /container -->
+
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+  </body>
+</html>
